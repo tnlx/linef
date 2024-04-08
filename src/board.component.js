@@ -47,68 +47,57 @@ export default function Board({ w, h, score_incr }) {
         }
         return indexes;
     }
-
-    function lineWrapOfIndex(idx) {
+    
+    function rowBounds(idx) {
         const st = Math.floor(idx / h) * w
         return {
             start: st,
             end: st + w
         }
     }
-
+        
     /**
-     * function to retrieve neighbor squares that the ball currently located at square idx can move to
-     * @param {*} idx
+     * All neighbor slots that the ball can move to in one step
+     * @param {*} idx 
      * @returns 
      */
-    function validNeighborIndex(idx) {
-        const check_idx_u = idx - w
-        const check_idx_l = idx - 1
-        const check_idx_r = idx + 1
-        const check_idx_d = idx + w
+    function neighborsMovable(idx) {
+        const t = idx - w;
+        const l = idx - 1;
+        const r = idx + 1;
+        const b = idx + w;
+        const rb = rowBounds(idx);
 
-        // Check for boundaries:
-        let valid_check_idx = []
-        const line_wrap = lineWrapOfIndex(idx)
-
-        if (check_idx_u >= 0) valid_check_idx.push(check_idx_u)
-        if (check_idx_l >= line_wrap.start) valid_check_idx.push(check_idx_l)
-        if (check_idx_r < line_wrap.end) valid_check_idx.push(check_idx_r)
-        if (check_idx_d < w * h) valid_check_idx.push(check_idx_d)
-
-        return valid_check_idx.filter(v_idx => isSquareFree(squares, v_idx))
+        let neighbors = []
+        if (t >= 0) {
+            neighbors.push(t);
+        }
+        if (l >= rb.start) {
+            neighbors.push(l);
+        }
+        if (r <= rb.end) {
+            neighbors.push(r);
+        }
+        if (b < w * h) {
+            neighbors.push(b);
+        }
+        return neighbors.filter(v_idx => squareIsNotOccupied(squares, v_idx))
     }
 
-    function isSquareFree(square, idx) {
-        return square[idx] === null || square[idx].isFree()
+    function squareIsNotOccupied(square, idx) {
+        return !square[idx] || square[idx].isFree()
     }
 
     // CLICK-EVENT ===================================================================
 
     /**
-     * check if there's a clear path for item to move from
-     * one square to another
-     * @param {*} from_idx current position index
-     * @param {*} to_idx destination index
-     * @returns true if a path is found; false otherwise
+     * Is there a clear path for item to move from
+     * the square at fromIdx to the square toIdx?
+     * @returns true/false
      */
-    function movable(from_idx, to_idx) {
-        /*
-         * at regular location, item can move to 4 neighbor squares
-         * i: index of item
-         * X: where i can move to, if its index is valid
-         * 
-         * also, i-1 and i+1 should be within line boundaries as item at beginning of one row
-         * should not be able to move to the end of the previous row
-         * 
-         * [   ] [i-w] [   ]
-         * [i-1] [<i>] [i+1]
-         * [   ] [i+w] [   ]
-         * 
-         */
-        const scanner = new Scanner(from_idx, to_idx, validNeighborIndex)
+    function movable(fromIdx, toIdx) {
+        const scanner = new Scanner(fromIdx, toIdx, neighborsMovable)
         const findRoute = scanner.findRoute()
-
         return {
             found: findRoute.found,
             route: findRoute.route
@@ -116,28 +105,28 @@ export default function Board({ w, h, score_incr }) {
     }
 
     /**
-     * signal that an item is selected by user click, and may be moved
-     * to another position at next click event
-     * @param {*} i 
+     * Square at *i* was selected, waiting for a destination.
      */
     function updateState_moveFrom(i) {
         setSelected(i);
     }
 
-    function emptyCell(arr, idx) {
+    function squareIsEmpty(arr, idx) {
         return !arr[idx];
     }
 
     /**
-     * logic to update game state when moving an item at square *selected*
-     * to square *i* which is already confirmed to be a blank square
-     * @param {*} i index of destination square
+     * The destination was selected at index *i*.
+     * Refresh game states:
+     * - Move the ball from source to destination
+     * - Check for a macth-5+
+     * - Prepare the next iteration
      */
     function updateState_moveItemTo(i) {
 
         const copy = squares.slice();
 
-        // In case the destination point was registered for a new ball to pop up, store it here
+        // In case the destination point was registered by a future ball, store it here
         // before manipulating the grid
         const futureBallAtI = copy[i] && copy[i].isFutureItem()
             ? BallProp.copy(copy[i])
@@ -157,7 +146,7 @@ export default function Board({ w, h, score_incr }) {
             let activeIndices = [...futureBallLocs];
             if (futureBallAtI) {
                 // Find a new home for this future ball and render it as a concrete ball
-                const nextFree = randomIndices(1, copy, emptyCell).pop()
+                const nextFree = randomIndices(1, copy, squareIsEmpty).pop()
                 copy[nextFree] = BallProp.ofPresent(futureBallAtI.color);
                 activeIndices.push(nextFree);
             }
@@ -165,13 +154,13 @@ export default function Board({ w, h, score_incr }) {
             // all future balls can now pop up
             futureBallLocs.forEach(idx => copy[idx] = BallProp.ofPresent(copy[idx].color));
 
-            // Prepare the next set of future balls
-            randomIndices(noRandomF, copy, emptyCell)
-                .forEach(rfs => copy[rfs] = BallProp.ofFuture(randomColor()));
-
             // Check match-5+ again
             checkResolved(copy, activeIndices, { w: w, h: h })
                 .forEach(ri => copy[ri] = null);
+
+            // Prepare the next set of future balls
+            randomIndices(noRandomF, copy, squareIsEmpty)
+                .forEach(rfs => copy[rfs] = BallProp.ofFuture(randomColor()));
         } else {
             // Some match-5+ found, hence no new ball pops up (future balls' state unchanged)
             // clear all cell involved in the match-5+ (except for the future ball if any)
@@ -191,21 +180,17 @@ export default function Board({ w, h, score_incr }) {
         }
     }
 
-    /**
-     * calculation logic and possible state changes when a click event is performed on a square
-     * @param {*} i index of selected square in *squares* array
-     * @returns 
-     */
-    
     function onSquareSelected(i) {
         if (squares[i] && squares[i].isPresentItem()) {
             updateState_moveFrom(i)
             return;
         }
-
-        if (selected != null /* A destination to move selected item to has been selected */
-            && movable(selected, i).found /* and a valid path is confirmed */) {
-            updateState_moveItemTo(i)
+        const moveFromIdx = selected;
+        const moveToIdx = i;
+        if (moveFromIdx != null && squares[moveFromIdx] /* valid source */
+            && squareIsNotOccupied(moveToIdx) /* valid destination */
+            && movable(moveFromIdx, moveToIdx).found) /* valid path */{
+            updateState_moveItemTo(moveToIdx)
             return;
         }
         // Else: Blank square selected (?) => Ignore
