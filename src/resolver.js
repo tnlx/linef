@@ -1,47 +1,42 @@
-import SquareItem from './squareItem'
+import BallProp from './ballprop'
+
+const isMatched = (e1, e2) => BallProp.isIdentical(e1, e2);
 
 /**
- * Check for a match-5+
+ * Check for a match-N+
  * 
- * This function checks for elements surrounding the active indexes in *active_idx_arr*
- * to see if a vertical/horizontal or diagonal line with 5+ items of the same color is form 
+ * This function checks for elements surrounding the active indices
+ * to see if a match-N+ is found (horizontal/vertical/diagonal)
  * 
- * @param {*} arr array represents a 2-dimension (*w x h*) grid of items
- * @param {*} active_idx_arr array of all indexes to be checked for a match
+ * @param {*} arr 1d-array represents a 2-dimension (*w x h*) grid of items
+ * @param {*} activeIndices array of all indexes to be checked for a match
  * @param {*} dimen { w, h } *arr*'s dimensions
  * @returns array contains indexes of *arr* that involve in a match
  */
-export function checkResolved(arr, active_idx_arr, { w, h }) {
+export function checkResolved(arr, activeIndices, { w, h }) {
     let resolved = []
-
-    active_idx_arr.forEach(i => {
+    activeIndices.forEach(i => {
         resolved = resolved
             .concat(checkResolved_horizontal(arr, i, { w, h }))
             .concat(checkResolved_vertical(arr, i, { w, h }))
             .concat(checkResolved_diagonal(arr, i, { w, h }))
     })
-    return resolved
+    return resolved;
 }
 
 
 function checkResolved_horizontal(arr, i, { w, h }) {
-    /* Check horizontal line
-     * [ i % w == 0 ] [ i % w == 1 ] ... [ i % w == w-1 ] 
-     */
-    const st = Math.floor(i / h) * w
-    const lineWrap = {
-        start: st,
-        end: st + w
-    }
+    /* [ i % w == 0 ] [ i % w == 1 ] ... [ i % w == w-1 ] */
+    const lineWrapStart = Math.floor(i / h) * w;
+    const lineWrapEnd = lineWrapStart + w;
     return checkResolved_withOffset(arr, i, 1, {
-        forward_bound: lineWrap.end,
-        backward_bound: lineWrap.start
+        forward_bound: lineWrapEnd,
+        backward_bound: lineWrapStart
     })
 }
 
 function checkResolved_vertical(arr, i, { w, h }) {
     /*
-    * Check vertical line
     * [ i - w]
     * [ i ]
     * [ i + w]
@@ -53,48 +48,42 @@ function checkResolved_vertical(arr, i, { w, h }) {
 }
 
 function checkResolved_diagonal(arr, i, { w, h }) {
-    let resolved = []
-
-    /*
-     * Check diagonal line 
-     * DIRECTION: \
-     */
-    resolved = resolved.concat(checkResolved_withOffset(arr, i, w + 1, {
+    const bounds = {
         forward_bound: arr.length,
         backward_bound: 0
-    }))
+    };
 
-    /*
-    * Check diagonal line 
-    * DIRECTION: /
-    */
-    resolved = resolved.concat(checkResolved_withOffset(arr, i, w - 1, {
-        forward_bound: arr.length,
-        backward_bound: 0
-    }))
-    return resolved
+    return []
+        /*
+        * [ x ][   ][   ]
+        * [   ][ x ][   ]
+        * [   ][   ][ x ]
+        */
+        .concat(checkResolved_withOffset(arr, i, w + 1, bounds))
+        /*
+        * [   ][   ][ x ]
+        * [   ][ x ][   ]
+        * [ x ][   ][   ]
+        */
+        .concat(checkResolved_withOffset(arr, i, w - 1, bounds));
 }
 
 function checkResolved_withOffset(arr, i, offset, { forward_bound, backward_bound }) {
-
-    let resolved = []
-
-    // count forward
     let countForward = []
     for (let incr = i + offset; incr < forward_bound
-        && SquareItem.isIdentical(arr[incr], arr[i]); incr += offset) {
+        && isMatched(arr[incr], arr[i]); incr += offset) {
         countForward.push(incr)
     }
-    // count backward
+
     let countBackward = []
     for (let decr = i - offset; decr >= backward_bound
-        && SquareItem.isIdentical(arr[decr], arr[i]); decr -= offset) {
+        && isMatched(arr[decr], arr[i]); decr -= offset) {
         countBackward.push(decr)
     }
-    // total:
+
     const count = countBackward.length + countForward.length + 1
     if (count >= 5) {
-        resolved = [i].concat(countForward, countBackward)
+        return [i].concat(countForward, countBackward);
     }
-    return resolved
+    return [];
 }

@@ -1,17 +1,25 @@
-export default class SquareItem {
+export default class BallProp {
 
     constructor(type, color) {
         this.type = type
         this.color = color
     }
 
+    static ofPresent(color) {
+        return new BallProp('p', color);
+    }
+
+    static ofFuture(color) {
+        return new BallProp('f', color);
+    }
+
     /**
-     * Create a new SquareItem by copying all properties of the input item
-     * @param {*} squareItem 
+     * Create a new BallProp by copying all properties of the input item
+     * @param {*} ballprop 
      * @returns 
      */
-    static copy(squareItem) {
-        return squareItem ? new SquareItem(squareItem.type, squareItem.color) : null
+    static copy(ballprop) {
+        return ballprop ? new BallProp(ballprop.type, ballprop.color) : null
     }
 
     /**

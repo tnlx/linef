@@ -1,30 +1,20 @@
 import React from 'react';
-import Item from './item.component';
+import { Ball, BallMaybe } from './ball.component';
 
-export default class Square extends React.PureComponent {
+export default function Square({ isActivated, item, onClick }) {
 
-    constructor(props) {
-        super(props)
-        this.onClick = this.onClick.bind(this)
-    }
-
-    onClick() {
-        this.props.onClick(this.props.identifier)
-    }
-
-    render() {
-        let itemOrBlank
-        if (this.props.item != null) {
-            itemOrBlank = <Item x='22' y='22'
-                color={this.props.item.color}
-                r={this.props.item.type === 'p' ? '30%' : '10%'} />
+    function ball(ballprop) {
+        if (!ballprop) {
+            return null;
         }
-        const style = this.props.isActivated ? 'square square-active' : 'square'
-        return (
-            <div className={style}
-                onClick={this.onClick}>
-                {itemOrBlank}
-            </div>
-        );
+        return ballprop.isPresentItem() ? <Ball color={ballprop.color} /> : <BallMaybe color={ballprop.color} />;
     }
-}
+
+    const activeStyle = isActivated ? 'square-active' : ''
+    return (
+        <div className={`square  ${activeStyle}`}
+            onClick={onClick}>
+            {ball(item)}
+        </div>
+    );
+};

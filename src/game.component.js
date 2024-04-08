@@ -1,30 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Score from './score.component'
 import Board from './board.component'
 
-export default class Game extends React.PureComponent {
+export default function Game() {
 
-    constructor(props) {
-        super(props)
-        this.state = {
-            score: 0
-        }
-        this.increaseScore = this.increaseScore.bind(this)
+    const [score, setScore] = useState(0);
+
+    function increaseScore(incr) {
+        setScore(score + incr);
     }
 
-    increaseScore(incr) {
-        this.setState({ score: this.state.score + incr })
-    }
-
-    render() {
-        return (
-            <div className="game">
-                <div className="score-board">
-                    <span>Score: </span>
-                    <Score score={this.state.score} />
-                </div>
-                <Board w="9" h="9" score_incr={this.increaseScore} />
+    return (
+        <div className="game">
+            <h1>
+                <span style={{ color: 'hsl(250,54%,60%)' }}>L</span>
+                <span style={{ color: 'hsl(200,54%,60%)' }}>i</span>
+                <span style={{ color: 'hsl(150,54%,60%)' }}>n</span>
+                <span style={{ color: 'hsl(100,54%,60%)' }}>e</span>
+                <span style={{ color: 'hsl(50,54%,60%)' }}>f</span>
+                <span>&nbsp;</span>
+                <span style={{ color: 'hsl(0,54%,60%)' }}>•</span>
+                <span style={{ color: 'hsl(50,54%,60%)' }}>•</span>
+                <span style={{ color: 'hsl(100,54%,60%)' }}>•</span>
+                <span style={{ color: 'hsl(150,54%,60%)' }}>•</span>
+                <span style={{ color: 'hsl(200,54%,60%)' }}>•</span>
+                <span style={{ color: 'hsl(250,54%,60%)' }}>•</span>
+                <span style={{ color: 'hsl(300,54%,60%)' }}>•</span>
+            </h1>
+            <div className="score-board">
+                <span>Score: </span>
+                <Score score={score} />
             </div>
-        );
-    }
+            <Board w={9} h={9} score_incr={increaseScore} />
+        </div>
+    );
 }

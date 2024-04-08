@@ -1,10 +1,7 @@
 import React from "react";
 
-export default class Score extends React.Component {
-
-    render() {
-        return (
-            <span>{this.props.score}</span>
-        )
-    }
+export default function Score({ score }) {
+    return (
+        <span>{score}</span>
+    )
 }

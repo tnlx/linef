@@ -1,59 +1,45 @@
-import React from 'react';
-import Square from './square.component.js';
+import React, { useState } from 'react';
 import Scanner from './scanner';
-import SquareItem from './squareItem';
-import { random_indexes_in_array } from './utils'
+import BallProp from './ballprop.js';
+import { randomIndices } from './utils'
 import { checkResolved } from './resolver'
+import Square from './square.component.js';
 
-export default class Board extends React.PureComponent {
+export default function Board({ w, h, score_incr }) {
 
-    constructor(props) {
-        super(props);
-        this.w = parseInt(this.props.w)
-        this.h = parseInt(this.props.h)
-        this.colors = ['#FF9494', '#FFD08B', '#E2E68C', '#A8F0D4', '#9DE2FE', '#C5B8F0', '#FBD8FF']
-        this.noRandomF = 3
-        this.state = {
-            squares: this.initArray(),
-            selected: null
-        };
-        this.onSquareSelected = this.onSquareSelected.bind(this)
-        this.validNeighborIndex = this.validNeighborIndex.bind(this)
+    const noRandomF = 3;
+    const colors = [
+        'hsl(0,54%,60%)',
+        'hsl(50,54%,60%)',
+        'hsl(100,54%,60%)',
+        'hsl(150,54%,60%)',
+        'hsl(200,54%,60%)',
+        'hsl(250,54%,60%)',
+        'hsl(300,54%,60%)',
+    ]
+
+    const [squares, setSquare] = useState(initArray());
+    const [selected, setSelected] = useState(null);
+
+    function randomColor() {
+        return colors[Math.floor(Math.random() * colors.length)]
     }
 
-    randomColor() {
-        return this.colors[Math.floor(Math.random() * this.colors.length)]
-    }
-
-    newPresentItem(color) {
-        return new SquareItem('p', color ? color : this.randomColor())
-    }
-
-    newFutureItem() {
-        return new SquareItem('f', this.randomColor())
-    }
-
-    initArray() {
-        let arr = Array(this.w * this.h).fill(null)
+    function initArray() {
+        let arr = Array(w * h).fill(null)
         const noRandomP = 5;
-        const noRandomF = this.noRandomF;
-        /*
-         * Generate random positions for present items and future items using random_indexes_in_array:
-         * board hasn't been initialized yet so there's no pre-occupied items in any square
-         * - pass a dummy filter condition () => true
-         * - and a dummy exclude array []
-         */
-        let fIdx = random_indexes_in_array(noRandomP + noRandomF, arr, () => true, [])
 
-        for (let i = 0; i < noRandomP; i++) arr[fIdx.pop()] = this.newPresentItem()
-        for (let i = 0; i < noRandomF; i++) arr[fIdx.pop()] = this.newFutureItem()
+        let fIdx = randomIndices(noRandomP + noRandomF, arr, () => true)
+
+        for (let i = 0; i < noRandomP; i++) arr[fIdx.pop()] = BallProp.ofPresent(randomColor());
+        for (let i = 0; i < noRandomF; i++) arr[fIdx.pop()] = BallProp.ofFuture(randomColor());
 
         return arr
     }
 
-    indexOfCurrentFutureItems() {
+    function indexOfNextBalls() {
         var indexes = [], i;
-        const sq = this.state.squares;
+        const sq = squares;
         for (i = 0; i < sq.length; i++) {
             if (sq[i] && sq[i].isFutureItem()) {
                 indexes.push(i);
@@ -62,38 +48,38 @@ export default class Board extends React.PureComponent {
         return indexes;
     }
 
-    lineWrapOfIndex(idx) {
-        const st = Math.floor(idx / this.h) * this.w
+    function lineWrapOfIndex(idx) {
+        const st = Math.floor(idx / h) * w
         return {
             start: st,
-            end: st + this.w
+            end: st + w
         }
     }
 
     /**
-     * function to retrieve neighbor squares that item at square idx can move to
+     * function to retrieve neighbor squares that the ball currently located at square idx can move to
      * @param {*} idx
      * @returns 
      */
-    validNeighborIndex(idx) {
-        const check_idx_u = idx - this.w
+    function validNeighborIndex(idx) {
+        const check_idx_u = idx - w
         const check_idx_l = idx - 1
         const check_idx_r = idx + 1
-        const check_idx_d = idx + this.w
+        const check_idx_d = idx + w
 
         // Check for boundaries:
         let valid_check_idx = []
-        const line_wrap = this.lineWrapOfIndex(idx)
+        const line_wrap = lineWrapOfIndex(idx)
 
         if (check_idx_u >= 0) valid_check_idx.push(check_idx_u)
         if (check_idx_l >= line_wrap.start) valid_check_idx.push(check_idx_l)
         if (check_idx_r < line_wrap.end) valid_check_idx.push(check_idx_r)
-        if (check_idx_d < this.w * this.h) valid_check_idx.push(check_idx_d)
+        if (check_idx_d < w * h) valid_check_idx.push(check_idx_d)
 
-        return valid_check_idx.filter(v_idx => this.isSquareFree(this.state.squares, v_idx))
+        return valid_check_idx.filter(v_idx => isSquareFree(squares, v_idx))
     }
 
-    isSquareFree(square, idx) {
+    function isSquareFree(square, idx) {
         return square[idx] === null || square[idx].isFree()
     }
 
@@ -106,7 +92,7 @@ export default class Board extends React.PureComponent {
      * @param {*} to_idx destination index
      * @returns true if a path is found; false otherwise
      */
-    movable(from_idx, to_idx) {
+    function movable(from_idx, to_idx) {
         /*
          * at regular location, item can move to 4 neighbor squares
          * i: index of item
@@ -120,7 +106,7 @@ export default class Board extends React.PureComponent {
          * [   ] [i+w] [   ]
          * 
          */
-        const scanner = new Scanner(from_idx, to_idx, this.validNeighborIndex)
+        const scanner = new Scanner(from_idx, to_idx, validNeighborIndex)
         const findRoute = scanner.findRoute()
 
         return {
@@ -134,116 +120,74 @@ export default class Board extends React.PureComponent {
      * to another position at next click event
      * @param {*} i 
      */
-    updateState_moveFrom(i) {
-        this.setState({ selected: i })
+    function updateState_moveFrom(i) {
+        setSelected(i);
+    }
+
+    function emptyCell(arr, idx) {
+        return !arr[idx];
     }
 
     /**
-     * logic to update game state when moving an item at square *this.state.selected*
+     * logic to update game state when moving an item at square *selected*
      * to square *i* which is already confirmed to be a blank square
      * @param {*} i index of destination square
      */
-    updateState_moveItemTo(i) {
-        /*
-         * A blank square has just been selected as a move-to destination
-         * - Remove item from previous square saved in 'selected' state
-         * - Add item to newly selected square
-         * - Refresh board's state so that related items are re-rendered
-         */
+    function updateState_moveItemTo(i) {
 
-        let random_free_square_index = null
-        let idx_of_f_items = this.indexOfCurrentFutureItems()
+        const copy = squares.slice();
 
-        /*
-         * Save index of all actively changed square in active_idx_arr variable
-         * so that we can check if any set of items is resolved later on (eg. result in a match-5+)
-         * Only save those contain 'p' items as 'f' items should not result in any match-5
-         */
-        let active_idx_arr = [i]
+        // In case the destination point was registered for a new ball to pop up, store it here
+        // before manipulating the grid
+        const futureBallAtI = copy[i] && copy[i].isFutureItem()
+            ? BallProp.copy(copy[i])
+            : null;
 
-        const squares = this.state.squares.slice();
+        // move the selected ball to location <i>
+        copy[i] = copy[selected]
+        copy[selected] = null
 
-        /*
-         * Resolve 'f' item:
-         * - Extra check to see if we are moving the selected item to a square where a future item is
-         * expected to be rendered
-         * - If yes, we have to find another random square to render that 'f' item as 'p' 
-         */
-        const isFutureItemAt_i = squares[i] && squares[i].isFutureItem()
-        const itemAt_i = SquareItem.copy(squares[i])
+        let ballsMatched = checkResolved(copy, [i], { w: w, h: h })
+        if (ballsMatched.length === 0) {
+            // The move resulted in no match.
+            // Future balls will now pop up at their registered locations
+            // This can result in a match-N+
 
-        /* update move-to position with properties of selected item */
-        squares[i] = SquareItem.copy(squares[this.state.selected])
-
-        /* remove selected item from its previous position */
-        squares[this.state.selected] = null
-
-        /* Check if any match-5+ is found. 
-         *
-         * If no match-5+ is found, small items should grow to full-size
-         * (this will result in new active indexes, so we need to check for match-5 again after that)
-         */
-        let resolved_idx = checkResolved(squares, active_idx_arr, { w: this.w, h: this.h })
-
-        if (resolved_idx.length === 0) { // No match-5+ found
-
-            // Reset active indexes array since there's no match-5 found for those indexes during previous check
-            // This array is going to be filled with position in which f-items grow to p-items
-            active_idx_arr = []
-
-            if (isFutureItemAt_i) { 
-                /*
-                 * if this is originally where an f-item is, but is then occupied by the moved item
-                 * - select a new position for the f-item
-                 * - replace item-move-to index from 'idx_of_f_items' array with the new random position,
-                 *   so that it is rendered full-size later on together with other current f-items
-                 */
-                random_free_square_index = random_indexes_in_array(this.noRandomF + 1, squares, this.isSquareFree, [i])
-                const switch_to_idx = random_free_square_index.pop()
-                squares[switch_to_idx] = itemAt_i
-    
-                idx_of_f_items.splice(idx_of_f_items.indexOf(i), 1)
-                idx_of_f_items.push(switch_to_idx)
-            } else {
-                random_free_square_index = random_indexes_in_array(this.noRandomF, squares, this.isSquareFree, [i])
+            const futureBallLocs = indexOfNextBalls();
+            let activeIndices = [...futureBallLocs];
+            if (futureBallAtI) {
+                // Find a new home for this future ball and render it as a concrete ball
+                const nextFree = randomIndices(1, copy, emptyCell).pop()
+                copy[nextFree] = BallProp.ofPresent(futureBallAtI.color);
+                activeIndices.push(nextFree);
             }
 
-            // render full-size all f-items now
-            idx_of_f_items.forEach(idx => {
-                squares[idx] = this.newPresentItem(squares[idx].color)
-                // f -> p: add ref to active_idx_arr
-                active_idx_arr.push(idx)
-            })
+            // all future balls can now pop up
+            futureBallLocs.forEach(idx => copy[idx] = BallProp.ofPresent(copy[idx].color));
 
-            // Create new 'f' (future) items (small items) at some random positions
-            for (let i = 0; i < this.noRandomF && random_free_square_index.length > 0; i++) {
-                squares[random_free_square_index.pop()] = this.newFutureItem()
-            }
+            // Prepare the next set of future balls
+            randomIndices(noRandomF, copy, emptyCell)
+                .forEach(rfs => copy[rfs] = BallProp.ofFuture(randomColor()));
 
-            /* again, check if any match-5+ is found */
-            resolved_idx = checkResolved(squares, active_idx_arr, { w: this.w, h: this.h })
-            for (const ri of resolved_idx) {
-                squares[ri] = null
-            }
-        } else { 
-            
-            // Some match-5+ found -> no new item pops up (f-items state unchanged)
-            // clear all cell involved in the match-5+ (except for the f-item at move-to position, if any)
-
-            for (const ri of resolved_idx) {
-                squares[ri] = null
-            }
-            if (isFutureItemAt_i) {
-                squares[i] = itemAt_i
+            // Check match-5+ again
+            checkResolved(copy, activeIndices, { w: w, h: h })
+                .forEach(ri => copy[ri] = null);
+        } else {
+            // Some match-5+ found, hence no new ball pops up (future balls' state unchanged)
+            // clear all cell involved in the match-5+ (except for the future ball if any)
+            ballsMatched.forEach(ri => copy[ri] = null);
+            if (futureBallAtI) {
+                copy[i] = futureBallAtI
             }
         }
 
-        /* signal react to re-render board */
-        this.setState({ squares: squares, selected: null })
+        // notify state changes
+        setSquare(copy);
+        setSelected(null);
 
         // Update score: send signal to parent component (Game)
-        if (resolved_idx.length > 0) {
-            this.props.score_incr(resolved_idx.length)
+        if (ballsMatched.length > 0) {
+            score_incr(ballsMatched.length)
         }
     }
 
@@ -252,47 +196,35 @@ export default class Board extends React.PureComponent {
      * @param {*} i index of selected square in *squares* array
      * @returns 
      */
-    onSquareSelected(i) {
-
-        // Detect attempt to move item from this square to another square        
-        if (this.state.squares[i] && this.state.squares[i].isPresentItem()) {
-            // An item is selected to be moved later on
-            this.updateState_moveFrom(i)
-            return
+    
+    function onSquareSelected(i) {
+        if (squares[i] && squares[i].isPresentItem()) {
+            updateState_moveFrom(i)
+            return;
         }
 
-        if (this.state.selected != null /* A destination to move selected item to has been selected */
-            && this.movable(this.state.selected, i).found /* and a valid path is confirmed */) {
-            this.updateState_moveItemTo(i)
-            return
+        if (selected != null /* A destination to move selected item to has been selected */
+            && movable(selected, i).found /* and a valid path is confirmed */) {
+            updateState_moveItemTo(i)
+            return;
         }
-        // Else: Ignore this click event since a blank square has just been selected
-        // but no previous item-to-move is recorded in board's state
+        // Else: Blank square selected (?) => Ignore
     }
 
     // REACT-RENDER ===================================================================
 
-    renderSquare(idx) {
-        return <Square key={idx}
-            item={this.state.squares[idx]}
-            identifier={idx}
-            onClick={this.onSquareSelected}
-            isActivated={this.state.selected === idx} />;
-    }
-
-    renderRows() {
-        let content = [];
-        for (let i = 0; i < this.state.squares.length; i++) {
-            content.push(this.renderSquare(i));
-        }
-        return content
-    }
-
-    render() {
-        return (
-            <div className='game-board'>
-                {this.renderRows()}
-            </div>
+    function renderCells() {
+        return squares.map((v, i) => 
+        <Square key={i}
+            item={v}
+            onClick={() => onSquareSelected(i)}
+            isActivated={selected === i} />
         );
     }
+
+    return (
+        <div className='game-board'>
+            {renderCells()}
+        </div>
+    );
 }
