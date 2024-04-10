@@ -1,20 +1,17 @@
 import React from 'react';
 import { Ball, BallMaybe } from './ball.component';
 
-export default function Square({ isActivated, item, onClick }) {
+export default function Square({ activated, item, onClick }) {
 
     function ball(ballprop) {
-        if (!ballprop) {
-            return null;
-        }
         return ballprop.isPresentItem() ? <Ball color={ballprop.color} /> : <BallMaybe color={ballprop.color} />;
     }
 
-    const activeStyle = isActivated ? 'square-active' : ''
+    const activeStyle = activated ? 'square-active' : ''
     return (
         <div className={`square  ${activeStyle}`}
             onClick={onClick}>
-            {ball(item)}
+            {item ? ball(item) : null}
         </div>
     );
 };

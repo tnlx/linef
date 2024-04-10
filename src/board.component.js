@@ -5,35 +5,28 @@ import { randomIndices } from './utils'
 import { checkResolved } from './resolver'
 import Square from './square.component.js';
 
-export default function Board({ w, h, score_incr }) {
+export default function Board({ w, h, palette, matched }) {
 
     const noRandomF = 3;
-    const colors = [
-        'hsl(0,54%,60%)',
-        'hsl(50,54%,60%)',
-        'hsl(100,54%,60%)',
-        'hsl(150,54%,60%)',
-        'hsl(200,54%,60%)',
-        'hsl(250,54%,60%)',
-        'hsl(300,54%,60%)',
-    ]
 
     const [squares, setSquare] = useState(initArray());
     const [selected, setSelected] = useState(null);
 
     function randomColor() {
-        return colors[Math.floor(Math.random() * colors.length)]
+        return palette[Math.floor(Math.random() * palette.length)]
     }
 
     function initArray() {
         let arr = Array(w * h).fill(null)
         const noRandomP = 5;
-
+        
         let fIdx = randomIndices(noRandomP + noRandomF, arr, () => true)
-
-        for (let i = 0; i < noRandomP; i++) arr[fIdx.pop()] = BallProp.ofPresent(randomColor());
-        for (let i = 0; i < noRandomF; i++) arr[fIdx.pop()] = BallProp.ofFuture(randomColor());
-
+        for (let i = 0; i < noRandomP; i++){
+            arr[fIdx.pop()] = BallProp.ofPresent(randomColor());
+        }
+        for (let i = 0; i < noRandomF; i++){
+            arr[fIdx.pop()] = BallProp.ofFuture(randomColor());
+        }
         return arr
     }
 
@@ -176,7 +169,7 @@ export default function Board({ w, h, score_incr }) {
 
         // Update score: send signal to parent component (Game)
         if (ballsMatched.length > 0) {
-            score_incr(ballsMatched.length)
+            matched(ballsMatched.length)
         }
     }
 
@@ -203,7 +196,7 @@ export default function Board({ w, h, score_incr }) {
         <Square key={i}
             item={v}
             onClick={() => onSquareSelected(i)}
-            isActivated={selected === i} />
+            activated={selected === i}/>
         );
     }
 
