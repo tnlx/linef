@@ -35,7 +35,7 @@ function checkResolved_horizontal(arr, i, { w, h }) {
     })
 }
 
-function checkResolved_vertical(arr, i, { w, h }) {
+function checkResolved_vertical(arr, i, { w }) {
     /*
     * [ i - w]
     * [ i ]
@@ -47,7 +47,7 @@ function checkResolved_vertical(arr, i, { w, h }) {
     })
 }
 
-function checkResolved_diagonal(arr, i, { w, h }) {
+function checkResolved_diagonal(arr, i, { w }) {
     const bounds = {
         forward_bound: arr.length,
         backward_bound: 0

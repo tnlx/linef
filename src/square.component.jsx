@@ -1,4 +1,3 @@
-import React from 'react';
 import { Ball, BallMaybe } from './ball.component';
 
 export default function Square({ activated, item, onClick }) {
@@ -14,4 +13,4 @@ export default function Square({ activated, item, onClick }) {
             {item ? ball(item) : null}
         </div>
     );
-};
+}

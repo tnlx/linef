@@ -1,5 +1,3 @@
-import React from "react";
-
 function Ball({color}) {
     return (
         <svg height="100%" width="100%" className='ball'>

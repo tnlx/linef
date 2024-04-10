@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import Scanner from './scanner';
+import { useState } from 'react';
+import Scanner from './scanner.js';
 import BallProp from './ballprop.js';
-import { randomIndices } from './utils'
-import { checkResolved } from './resolver'
-import Square from './square.component.js';
+import { randomIndices } from './utils.js'
+import { checkResolved } from './resolver.js'
+import Square from './square.component';
 
 export default function Board({ w, h, palette, matched }) {
 
