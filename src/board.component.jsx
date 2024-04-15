@@ -8,39 +8,32 @@ import Square from './square.component';
 export default function Board({ w, h, palette, matched }) {
 
     const noRandomF = 3;
-
+    const noRandomP = 5; // at initialization
     const [squares, setSquare] = useState(initArray());
-    const [selected, setSelected] = useState(null);
+    const [nextBalls, setNextBalls] = useState(initNextBalls(squares));
+    const [moveFrom, setMoveFrom] = useState(null);
 
     function randomColor() {
         return palette[Math.floor(Math.random() * palette.length)]
     }
 
     function initArray() {
-        let arr = Array(w * h).fill(null)
-        const noRandomP = 5;
-        
-        let fIdx = randomIndices(noRandomP + noRandomF, arr, () => true)
-        for (let i = 0; i < noRandomP; i++){
-            arr[fIdx.pop()] = BallProp.ofPresent(randomColor());
-        }
-        for (let i = 0; i < noRandomF; i++){
-            arr[fIdx.pop()] = BallProp.ofFuture(randomColor());
-        }
+        let arr = Array(w * h).fill(null);
+        randomIndices(noRandomP, arr, () => true)
+            .map(ri => arr[ri] = BallProp.ofPresent(randomColor()));
         return arr
     }
 
-    function indexOfNextBalls() {
-        var indexes = [], i;
-        const sq = squares;
-        for (i = 0; i < sq.length; i++) {
-            if (sq[i] && sq[i].isFutureItem()) {
-                indexes.push(i);
-            }
-        }
-        return indexes;
+    function initNextBalls(squares) {
+        return randomIndices(noRandomF, squares, (arr, i) => !arr[i])
+            .map(ri => {
+                return {
+                    loc: ri,
+                    ball: BallProp.ofFuture(randomColor())
+                }
+            });
     }
-    
+
     function rowBounds(idx) {
         const st = Math.floor(idx / h) * w
         return {
@@ -48,7 +41,7 @@ export default function Board({ w, h, palette, matched }) {
             end: st + w
         }
     }
-        
+
     /**
      * All neighbor slots that the ball can move to in one step
      * @param {*} idx 
@@ -78,7 +71,7 @@ export default function Board({ w, h, palette, matched }) {
     }
 
     function squareIsNotOccupied(square, idx) {
-        return !square[idx] || square[idx].isFree()
+        return !square[idx];
     }
 
     // CLICK-EVENT ===================================================================
@@ -97,94 +90,59 @@ export default function Board({ w, h, palette, matched }) {
         }
     }
 
-    /**
-     * Square at *i* was selected, waiting for a destination.
-     */
-    function updateState_moveFrom(i) {
-        setSelected(i);
-    }
-
-    function squareIsEmpty(arr, idx) {
-        return !arr[idx];
-    }
-
-    /**
-     * The destination was selected at index *i*.
-     * Refresh game states:
-     * - Move the ball from source to destination
-     * - Check for a macth-5+
-     * - Prepare the next iteration
-     */
-    function updateState_moveItemTo(i) {
-
+    function move(from, to) {
         const copy = squares.slice();
+        copy[to] = copy[from];
+        copy[from] = null;
+        finishIteration(copy, to);
+    }
 
-        // In case the destination point was registered by a future ball, store it here
-        // before manipulating the grid
-        const futureBallAtI = copy[i] && copy[i].isFutureItem()
-            ? BallProp.copy(copy[i])
-            : null;
-
-        // move the selected ball to location <i>
-        copy[i] = copy[selected]
-        copy[selected] = null
-
-        let ballsMatched = checkResolved(copy, [i], { w: w, h: h })
+    /**
+     * A move happened. Refresh game states:
+     * - Check for a match-N+
+     * - Prepare the next iteration
+     * @param {*} copy of the squares array that contains changes resulted from the move
+     * @param {*} i the Move-To location
+     */
+    function finishIteration(copy, i) {
+        let allocateNextBalls = false;
+        let ballsMatched = checkResolved(copy, [i], { w: w, h: h });
         if (ballsMatched.length === 0) {
-            // The move resulted in no match.
-            // Future balls will now pop up at their registered locations
-            // This can result in a match-N+
-
-            const futureBallLocs = indexOfNextBalls();
-            let activeIndices = [...futureBallLocs];
-            if (futureBallAtI) {
-                // Find a new home for this future ball and render it as a concrete ball
-                const nextFree = randomIndices(1, copy, squareIsEmpty).pop()
-                copy[nextFree] = BallProp.ofPresent(futureBallAtI.color);
-                activeIndices.push(nextFree);
+            //
+            // NO match-N+: Future balls will now pop up at their registered locations
+            // This can also result in a match-N+
+            //
+            allocateNextBalls = true;
+            const idxOfNextBallAtI = nextBalls.findIndex(next => next.loc === i);
+            if (idxOfNextBallAtI >= 0) {
+                nextBalls[idxOfNextBallAtI].loc = randomIndices(1, copy,
+                    (arr, loc) => !arr[loc] && !nextBalls.find(next => next.loc === loc))
+                    .pop();
             }
-
-            // all future balls can now pop up
-            futureBallLocs.forEach(idx => copy[idx] = BallProp.ofPresent(copy[idx].color));
-
-            // Check match-5+ again
-            checkResolved(copy, activeIndices, { w: w, h: h })
-                .forEach(ri => copy[ri] = null);
-
-            // Prepare the next set of future balls
-            randomIndices(noRandomF, copy, squareIsEmpty)
-                .forEach(rfs => copy[rfs] = BallProp.ofFuture(randomColor()));
-        } else {
-            // Some match-5+ found, hence no new ball pops up (future balls' state unchanged)
-            // clear all cell involved in the match-5+ (except for the future ball if any)
-            ballsMatched.forEach(ri => copy[ri] = null);
-            if (futureBallAtI) {
-                copy[i] = futureBallAtI
-            }
+            nextBalls.forEach(next => copy[next.loc] = BallProp.ofPresent(next.ball.color));
+            ballsMatched = checkResolved(copy, nextBalls.map(next => next.loc), { w: w, h: h });
         }
-
-        // notify state changes
-        setSquare(copy);
-        setSelected(null);
-
-        // Update score: send signal to parent component (Game)
         if (ballsMatched.length > 0) {
-            matched(ballsMatched.length)
+            ballsMatched.forEach(ri => copy[ri] = null);
+            matched(ballsMatched.length);
+        }
+        setSquare(copy);
+        setMoveFrom(null);
+        if (allocateNextBalls) {
+            setNextBalls(initNextBalls(copy));
         }
     }
 
     function onSquareSelected(i) {
-        if (squares[i] && squares[i].isPresentItem()) {
-            updateState_moveFrom(i)
+        if (squares[i]) {
+            setMoveFrom(i);
             return;
         }
-        const moveFromIdx = selected;
-        const moveToIdx = i;
-        if (moveFromIdx != null && squares[moveFromIdx] /* valid source */
-            && squareIsNotOccupied(moveToIdx) /* valid destination */
-            && movable(moveFromIdx, moveToIdx).found) /* valid path */{
-            updateState_moveItemTo(moveToIdx)
-            return;
+        const moveTo = i;
+        if (moveFrom != null && squares[moveFrom] /* valid source */
+            && squareIsNotOccupied(moveTo) /* valid destination */
+            && movable(moveFrom, moveTo).found) /* valid path */ {
+            move(moveFrom, moveTo);
         }
         // Else: Blank square selected (?) => Ignore
     }
@@ -192,11 +150,11 @@ export default function Board({ w, h, palette, matched }) {
     // REACT-RENDER ===================================================================
 
     function renderCells() {
-        return squares.map((v, i) => 
-        <Square key={i}
-            item={v}
-            onClick={() => onSquareSelected(i)}
-            activated={selected === i}/>
+        return squares.map((v, i) =>
+            <Square key={i}
+                item={v || nextBalls.find(n => n.loc === i)?.ball}
+                onClick={() => onSquareSelected(i)}
+                activated={moveFrom === i} />
         );
     }
 
