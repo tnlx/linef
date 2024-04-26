@@ -4,6 +4,7 @@ import BallProp from './ballprop.js';
 import { randomIndices } from './utils.js'
 import { checkResolved } from './resolver.js'
 import Square from './square.component';
+import { Ball, BallMaybe } from './ball.component.jsx';
 
 export default function Board({ w, h, palette, matched }) {
 
@@ -20,7 +21,7 @@ export default function Board({ w, h, palette, matched }) {
     function initArray() {
         let arr = Array(w * h).fill(null);
         randomIndices(noRandomP, arr, () => true)
-            .map(ri => arr[ri] = BallProp.ofPresent(randomColor()));
+            .map(ri => arr[ri] = BallProp.of(randomColor()));
         return arr
     }
 
@@ -29,7 +30,7 @@ export default function Board({ w, h, palette, matched }) {
             .map(ri => {
                 return {
                     loc: ri,
-                    ball: BallProp.ofFuture(randomColor())
+                    ball: BallProp.of(randomColor())
                 }
             });
     }
@@ -119,7 +120,7 @@ export default function Board({ w, h, palette, matched }) {
                     (arr, loc) => !arr[loc] && !nextBalls.find(next => next.loc === loc))
                     .pop();
             }
-            nextBalls.forEach(next => copy[next.loc] = BallProp.ofPresent(next.ball.color));
+            nextBalls.forEach(next => copy[next.loc] = BallProp.of(next.ball.color));
             ballsMatched = checkResolved(copy, nextBalls.map(next => next.loc), { w: w, h: h });
         }
         if (ballsMatched.length > 0) {
@@ -150,12 +151,23 @@ export default function Board({ w, h, palette, matched }) {
     // REACT-RENDER ===================================================================
 
     function renderCells() {
-        return squares.map((v, i) =>
-            <Square key={i}
-                item={v || nextBalls.find(n => n.loc === i)?.ball}
-                onClick={() => onSquareSelected(i)}
-                activated={moveFrom === i} />
-        );
+        return squares.map((v, i) => {
+            let item = null;
+            if (v) {
+                item = <Ball color={v.color} />;
+            } else {
+                const nb = nextBalls.find(n => n.loc === i)?.ball;
+                if (nb) {
+                    item = <BallMaybe color={nb.color} />;
+                }
+            }
+            return (
+                <Square key={i}
+                    item={item}
+                    onClick={() => onSquareSelected(i)}
+                    activated={moveFrom === i} />
+            )
+        });
     }
 
     return (
