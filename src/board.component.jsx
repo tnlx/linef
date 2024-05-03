@@ -15,7 +15,7 @@ export default function Board({ w, h, palette, matched }) {
     const [moveFrom, setMoveFrom] = useState(null);
 
     function randomColor() {
-        return palette[Math.floor(Math.random() * palette.length)]
+        return palette[Math.floor(Math.random() * palette.length)];
     }
 
     function initArray() {

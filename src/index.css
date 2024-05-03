@@ -1,8 +1,35 @@
 :root {
   --cell-size: 8vmin;
+}
+
+[data-theme="light"] {
+  --bg: rgb(243, 243, 243);
+  --fg: rgba(8, 8, 8, 0.7);
+  --bg-active: rgb(230, 230, 230);
+  --border: rgba(167, 167, 167, 0.7);
+
+  --ball-1: hsl(0, 47%, 54%);
+  --ball-2: hsl(50, 47%, 54%);
+  --ball-3: hsl(90, 40%, 54%);
+  --ball-4: hsl(170, 47%, 54%);
+  --ball-5: hsl(210, 47%, 54%);
+  --ball-6: hsl(250, 47%, 54%);
+  --ball-7: hsl(300, 47%, 54%);
+}
+
+[data-theme="dark"] {
   --bg: rgb(27, 36, 53);
   --fg: rgba(255, 255, 255, 0.7);
+  --bg-active: rgb(56, 60, 70);
   --border: rgba(76, 76, 76, 0.7);
+
+  --ball-1: hsl(0, 54%, 60%);
+  --ball-2: hsl(50, 54%, 60%);
+  --ball-3: hsl(100, 54%, 60%);
+  --ball-4: hsl(150, 54%, 60%);
+  --ball-5: hsl(200, 54%, 60%);
+  --ball-6: hsl(250, 54%, 60%);
+  --ball-7: hsl(300, 54%, 60%);
 }
 
 body {
@@ -28,9 +55,12 @@ body {
   margin: auto;
 }
 
-h1 {
+.heading {
   font-size: 2rem;
+  font-weight: bold;
   margin: 1.5em 0 0 0;
+  display: flex;
+  justify-content: space-between;
 }
 
 .score-board {
@@ -38,19 +68,30 @@ h1 {
   font-size: calc(8px + 1vmin)
 }
 
+button:hover {
+  cursor: grab;
+}
+
+button {
+  border: none;
+  background-color: transparent;
+}
+
+.icon:hover {
+  fill: var(--ball-5);
+}
+
 /* Board */
 
 .game-board {
   display: grid;
   margin: auto;
-  width: calc(var(--cell-size) * 9 + 20px);
-  height: calc(var(--cell-size) * 9 + 20px);
+  width: calc(var(--cell-size) * 9 + 10px);
+  height: calc(var(--cell-size) * 9 + 10px);
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(9, 1fr);
-  row-gap: 2px;
-  column-gap: 2px;
-  background-color: var(--border);
-  border: 2px solid var(--border);
+  row-gap: 0;
+  column-gap: 0;
 }
 
 .square {
@@ -59,12 +100,14 @@ h1 {
   padding: 0;
   margin: 0;
   text-align: center;
+  border: 1px solid var(--border);
+  border-collapse: collapse;
   width: var(--cell-size);
   height: var(--cell-size);
 }
 
 .square:hover {
-  background: rgb(56, 60, 70);
+  background: var(--bg-active);
 }
 
 
@@ -82,6 +125,7 @@ h1 {
 }
 
 @keyframes pulse {
+
   25%,
   75% {
     transform: scale(.7);
