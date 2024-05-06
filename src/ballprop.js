@@ -9,7 +9,7 @@ export default class BallProp {
     }
 
     static isIdentical(s1, s2) {
-        if (s1 === null || s2 === null) return false
-        return s1.color === s2.color
+        if (s1 === null || s2 === null) return false;
+        return s1.color === s2.color;
     }
 }

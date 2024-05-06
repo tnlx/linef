@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import Scanner from './scanner.js';
+import { hasRoute } from './scanner.js';
 import BallProp from './ballprop.js';
 import { randomIndices } from './utils.js'
-import { checkResolved } from './resolver.js'
+import { match } from './matcher.js'
 import Square from './square.component';
 import { Ball, BallMaybe } from './ball.component.jsx';
 
@@ -68,7 +68,7 @@ export default function Board({ w, h, palette, matched }) {
         if (b < w * h) {
             neighbors.push(b);
         }
-        return neighbors.filter(v_idx => squareIsNotOccupied(squares, v_idx))
+        return neighbors.filter(v_idx => v_idx < squares.length && squareIsNotOccupied(squares, v_idx))
     }
 
     function squareIsNotOccupied(square, idx) {
@@ -83,12 +83,7 @@ export default function Board({ w, h, palette, matched }) {
      * @returns true/false
      */
     function movable(fromIdx, toIdx) {
-        const scanner = new Scanner(fromIdx, toIdx, neighborsMovable)
-        const findRoute = scanner.findRoute()
-        return {
-            found: findRoute.found,
-            route: findRoute.route
-        }
+        return !!hasRoute(fromIdx, toIdx, neighborsMovable);
     }
 
     function move(from, to) {
@@ -107,7 +102,7 @@ export default function Board({ w, h, palette, matched }) {
      */
     function finishIteration(copy, i) {
         let allocateNextBalls = false;
-        let ballsMatched = checkResolved(copy, [i], { w: w, h: h });
+        let ballsMatched = match(copy, [i], w, BallProp.isIdentical);
         if (ballsMatched.length === 0) {
             //
             // NO match-N+: Future balls will now pop up at their registered locations
@@ -121,7 +116,7 @@ export default function Board({ w, h, palette, matched }) {
                     .pop();
             }
             nextBalls.forEach(next => copy[next.loc] = BallProp.of(next.ball.color));
-            ballsMatched = checkResolved(copy, nextBalls.map(next => next.loc), { w: w, h: h });
+            ballsMatched = match(copy, nextBalls.map(next => next.loc), w, BallProp.isIdentical);
         }
         if (ballsMatched.length > 0) {
             ballsMatched.forEach(ri => copy[ri] = null);
@@ -142,7 +137,7 @@ export default function Board({ w, h, palette, matched }) {
         const moveTo = i;
         if (moveFrom != null && squares[moveFrom] /* valid source */
             && squareIsNotOccupied(moveTo) /* valid destination */
-            && movable(moveFrom, moveTo).found) /* valid path */ {
+            && movable(moveFrom, moveTo)) /* valid path */ {
             move(moveFrom, moveTo);
         }
         // Else: Blank square selected (?) => Ignore

@@ -2,6 +2,10 @@
   --cell-size: 8vmin;
 }
 
+@media (prefers-color-scheme: dark) {
+  
+}
+
 [data-theme="light"] {
   --bg: rgb(243, 243, 243);
   --fg: rgba(8, 8, 8, 0.7);
