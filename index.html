@@ -1,28 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Linef: a remake of Color Lines"
-    />
-    <!--
+
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Linef: a remake of Color Lines" />
+  <!--
       manifest.json provides metadata used when your web app is installed on a
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
-    <link rel="manifest" href="/manifest.json" />
-    <script type="module" src="/src/index.jsx"></script>
+  <link rel="manifest" href="/manifest.json" />
+  
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      })
+    }
+  </script>
+  <script type="module" src="/src/index.jsx"></script>
 
-    <!-- 180×180 PNG image for Apple devices -->
-    <!--<link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.svg" /> -->
-    
-    <title>Linef</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+  <!-- 180×180 PNG image for Apple devices -->
+  <!--<link rel="apple-touch-icon" href="%PUBLIC_URL%/favicon.svg" /> -->
+
+  <title>Linef</title>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+
 </html>

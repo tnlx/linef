@@ -7,6 +7,17 @@ export default defineConfig({
   base: process.env.BASE,
   build: {
     outDir: 'build',
+    rollupOptions: {
+      input: {
+        index: './index.html',
+        sw: './src/sw.js',
+      },
+      output: {
+        entryFileNames: assetInfo => assetInfo.name === 'sw' ? '[name].js' : 'assets/[name].js',
+        chunkFileNames: `assets/[name].js`,
+        assetFileNames: `assets/[name].[ext]`
+      }
+    }
   },
   plugins: [
     react(),
