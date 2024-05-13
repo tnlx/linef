@@ -77,8 +77,16 @@ button {
   background-color: transparent;
 }
 
-.icon:hover {
+.icons-tabler-filled:hover {
   fill: var(--ball-5);
+}
+
+.icons-tabler-outline {
+  stroke: var(--fg);
+}
+
+.icons-tabler-outline:hover {
+  stroke: var(--ball-5);
 }
 
 /* Board */
