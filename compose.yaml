@@ -1,0 +1,14 @@
+services:
+  linef:
+    build:
+      context: .
+      target: devkit
+    ports:
+      - 5173:5173
+    entrypoint: >
+      npm run start -- --host
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /src
