@@ -23,8 +23,11 @@ const sun = (
 const icons = [moon, sun];
 
 export default function ThemeSwitcher() {
+    const [mode, setMode] = useState(prefersDarkScheme() + 0);
 
-    const [mode, setMode] = useState(1);
+    function prefersDarkScheme() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
 
     function switchTheme() {
         setMode(1 - mode);
